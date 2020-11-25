@@ -22,11 +22,13 @@ using namespace caffe;
 using namespace std;
 
 void test_set_atom_gradients() {
-  Caffe::set_mode(Caffe::GPU);
   // randomly generate gridpoint gradients, accumulate for atoms, and then compare
   p_args.log << "CNN Set Atom Gradients Test \n";
   p_args.log << "Using random seed: " << p_args.seed << '\n';
   p_args.log << "Iteration " << p_args.iter_count << '\n';
+
+  Caffe::set_mode(Caffe::GPU);
+
   std::mt19937 engine(p_args.seed);
   std::normal_distribution<> diff_dist(0, 5);
   auto gen = std::bind(diff_dist, engine);
@@ -35,7 +37,9 @@ void test_set_atom_gradients() {
   std::vector<smt> mol_types;
   make_mol(mol_atoms, mol_types, engine, 0, 1, 5000, 11.5, 11.5, 11.5);
   cnn_options cnnopts;
-  cnnopts.cnn_scoring = true;
+  cnnopts.cnn_scoring = CNNall;
+  cnnopts.cnn_model_names.push_back("crossdock_default2018");
+
   model m;
   CNNScorer cnn_scorer(cnnopts);
   typedef CNNScorer::Dtype Dtype;
@@ -95,7 +99,9 @@ void test_vanilla_grids() {
   make_mol(mol_atoms, mol_types, engine);
 
   cnn_options cnnopts;
-  cnnopts.cnn_scoring = true;
+  cnnopts.cnn_scoring = CNNall;
+  cnnopts.cnn_model_names.push_back("crossdock_default2018");
+
   model m;
   CNNScorer cnn_scorer(cnnopts);
   typedef CNNScorer::Dtype Dtype;

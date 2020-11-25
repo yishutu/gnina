@@ -58,10 +58,10 @@ for system, flexdist in [("10gs", 3.0), ("184l", 3.9)]:
     outflex="flex-min-{system}.pdb".format(system=system)
 
     subprocess.check_call("{gnina} -r data/{system}_rec.pdb -l data/{system}_lig.sdf \
-        --cnn_scoring --minimize \
+        --cnn_scoring=all --minimize \
         --flexdist {flexdist} --flexdist_ligand data/{system}_lig.sdf \
         -o {outlig} --out_flex {outflex} \
-        --gpu".format(gnina=gnina, outlig=outlig, outflex=outflex, system=system, flexdist=flexdist),
+        ".format(gnina=gnina, outlig=outlig, outflex=outflex, system=system, flexdist=flexdist),
         shell=True)
 
     assert moved(outlig, "data/{system}_lig.sdf".format(system=system), "sdf")
@@ -78,7 +78,7 @@ for system, flexdist in [("10gs", 3.0), ("184l", 3.9)]:
     subprocess.check_call("{gnina} -r data/{system}_rec.pdb -l data/{system}_lig.sdf \
         --autobox_ligand data/{system}_lig.sdf --autobox_add 6 \
         --flexdist {flexdist} --flexdist_ligand data/{system}_lig.sdf \
-        --num_mc_steps 50 \
+        --num_mc_steps 50 --no_gpu\
         -o {outlig} --out_flex {outflex}".format(gnina=gnina, outlig=outlig, outflex=outflex, system=system, flexdist=flexdist), 
         shell=True)
 
@@ -107,3 +107,47 @@ for closest in [1, 2, 3]:
     assert moved(outlig, "data/184l_lig.sdf", "sdf")
     assert moved(outflex, "data/184l_rec_ref_c{closest}.pdb".format(closest=closest), "pdb")
     rmout(outlig, outflex)
+
+#this was not creating the right box resulting in empty output
+outlig="lig-dock-3rod.pdb".format(closest=closest)
+outflex="flex-dock-3rod.pdb".format(closest=closest)
+subprocess.check_call("{gnina} -r data/3rod_rec.pdb -l data/3rod_lig.pdb \
+    --autobox_ligand data/3rod_lig.pdb --seed 0\
+    --flexdist 3 --flexdist_ligand data/3rod_lig.pdb \
+    --num_mc_steps 100 --exhaustiveness 1 --cnn_scoring=none \
+    -o {outlig} --out_flex {outflex}".format(gnina=gnina,
+        outlig=outlig,
+        outflex=outflex,
+        closest=closest),
+    shell=True)
+
+assert moved(outlig, "data/3rod_lig.pdb", "pdb")
+assert moved(outflex, "data/3rod_rec_ref.pdb", "pdb")
+rmout(outlig, outflex)
+
+# Check warning if there are two residues with same chain, number and icode
+subprocess.check_call("{gnina} -r data/1m4n_A_rec_wrong.pdb -l data/1m7y_mrd_uff2.sdf \
+    --autobox_ligand data/1m7y_mrd_uff2.sdf --seed 0\
+    --flexdist 3.5 --flexdist_ligand data/1m7y_mrd_uff2.sdf \
+    --num_mc_steps 100 --exhaustiveness 1 --cnn_scoring=none \
+    2>&1 | tee gnina.log".format(gnina=gnina),
+    shell=True)
+with open("gnina.log", "r") as f:
+    content = f.read()
+    assert content.count("Flexible residues: A:83 A:85") == 1
+    assert content.count("WARNING: Residue A:83 appears to have too many atoms.") == 2
+    assert content.count("WARNING: Residue A:85 appears to have too many atoms.") == 2
+rmout("gnina.log")
+
+# Check warning if there are two residues with same chain, number and icode
+subprocess.check_call("{gnina} -r data/1m4n_A_rec_correct.pdb -l data/1m7y_mrd_uff2.sdf \
+    --autobox_ligand data/1m7y_mrd_uff2.sdf --seed 0\
+    --flexdist 3.5 --flexdist_ligand data/1m7y_mrd_uff2.sdf \
+    --num_mc_steps 100 --exhaustiveness 1 --cnn_scoring=none \
+    2>&1 | tee gnina.log".format(gnina=gnina),
+    shell=True)
+with open("gnina.log", "r") as f:
+    content = f.read()
+    assert content.count("Flexible residues: B:83 B:85") == 1
+    assert content.count("WARNING") == 0
+rmout("gnina.log")

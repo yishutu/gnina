@@ -67,7 +67,7 @@ struct gpu_data {
     unsigned forces_size;
     unsigned pairs_size;
     unsigned other_pairs_size;
-    bool device_on;
+    bool device_on; //use gpu for docking, not just CNN
     int device_id;
 
     //TODO delete
@@ -177,6 +177,7 @@ struct sdfcontext {
     std::vector<sdfatom> atoms; //index should match index into coords
     std::vector<sdfbond> bonds;
     std::vector<sdfprop> properties; //CHG and ISO go here
+    std::string datastr; //retained properties
 
     void dump(std::ostream& out) const;
     //output sdf with provided coords
@@ -193,6 +194,7 @@ struct sdfcontext {
       ar & atoms;
       ar & bonds;
       ar & properties;
+      ar & datastr;
     }
 };
 
@@ -406,6 +408,7 @@ struct model {
 
     std::string ligand_atom_str(sz i, sz lig = 0) const;
     fl gyration_radius(sz ligand_number) const; // uses coords
+    fl max_span(sz ligand_number) const; // uses coords
 
     const atom_base& movable_atom(sz i) const {
       assert(i < m_num_movable_atoms);

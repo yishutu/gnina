@@ -5,7 +5,6 @@
  *      Author: dkoes
  *
  *  Model(s) and weight(s) for CNNs compiled into the code (used xxd -i )
- *  TODO: support multiple models generically indexed by name
  *  TODO: generate this file from the raw data automatically.
  *
  *
@@ -35,5 +34,6 @@ struct cnn_model_def {
 
 extern boost::unordered_map<std::string, cnn_model_def> cnn_models;
 extern std::string builtin_cnn_models(); //return available names
+extern std::string default_model_name;
 
 #endif
