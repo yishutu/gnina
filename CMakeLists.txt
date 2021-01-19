@@ -14,7 +14,7 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "")
 endif()
 
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-set(CMAKE_CXX_FLAGS "-Wno-deprecated-declarations")
+set(CMAKE_CXX_FLAGS "-Wno-deprecated-declarations -Wno-unknown-pragmas")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
@@ -30,6 +30,25 @@ set(OPENBABEL_LIBRARIES $<TARGET_FILE:openbabel>)
 set(OPENBABEL_INCLUDE_DIR ${OpenBabel3_INCLUDE_DIRS})
 include_directories(${OPENBABEL_INCLUDE_DIR})
 
+find_package(libmolgrid)
+if(NOT LIBMOLGRID_LIBRARY)
+ message("libmolgrid will be fetched from git")
+ include(ExternalProject)
+ find_package(Git REQUIRED)
+ set(EXTERNAL_INSTALL_LOCATION ${CMAKE_BINARY_DIR}/external)
+ ExternalProject_Add(libmolgrid
+    GIT_REPOSITORY https://github.com/gnina/libmolgrid
+    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION}
+  )
+  set(LIBMOLGRID_INCLUDE_DIR ${EXTERNAL_INSTALL_LOCATION}/include)
+  set(LIBMOLGRID_LIBRARY ${EXTERNAL_INSTALL_LOCATION}/lib/libmolgrid.a)
+  include_directories(${LIBMOLGRID_INCLUDE_DIR})
+else()
+  add_custom_target(libmolgrid)
+endif()
+
+
+
 include(caffe/cmake/Utils.cmake)
 include(caffe/cmake/Cuda.cmake)
 
@@ -43,23 +62,8 @@ include_directories(${CMAKE_BINARY_DIR}/caffe/include/)
 include_directories(caffe/include)
 add_subdirectory(gninasrc)
 
-find_package(libmolgrid)
-if(NOT LIBMOLGRID_LIBRARY)
- message("libmolgrid will be fetched from git")
- include(ExternalProject)
- find_package(Git REQUIRED)
- set(EXTERNAL_INSTALL_LOCATION ${CMAKE_BINARY_DIR}/external)
- ExternalProject_Add(libmolgrid
-    GIT_REPOSITORY https://github.com/gnina/libmolgrid
-    CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION}
-  )
-  set(LIBMOLGRID_INCLUDE_DIR ${EXTERNAL_INSTALL_LOCATION}/include)
-  set(LIBMOLGRID_LIBRARY ${EXTERNAL_INSTALL_LOCATION}/lib/libmolgrid.so)
-else()
-  add_custom_target(libmolgrid)
-endif()
-
 include_directories(${LIBMOLGRID_INCLUDE_DIR})
+
 
 # enable testing
 include(CTest)
